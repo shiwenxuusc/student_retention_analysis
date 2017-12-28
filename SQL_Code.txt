@@ -1,0 +1,77 @@
+SQL is used to prepare the intermediate tables to explore data in Google BigQuery and R.
+
+
+student_info&student_reg
+SELECT
+  si.age_band AS age_range,
+  si.final_result AS finalresult,
+  COUNT(*) AS count_of_student,
+  AVG(sr.date_registration)AS avg_date_reg,
+  AVG(sr.date_unregistration) AS avg_date_unreg
+FROM
+  [ou.studentInfo] AS si
+INNER JOIN
+  [ou.studentRegistration] AS sr
+ON
+  si.id_student=sr.id_student
+GROUP BY
+  age_range,
+  finalresult
+ORDER BY
+  age_range
+
+student_drop
+select si.id_student, si.code_module, si.code_presentation, final_result, date_unregistration 
+from ou.studentInfo si
+inner join ou.studentRegistration sr
+on si.id_student=sr.id_student and si.code_module=sr.code_module and si.code_presentation=sr.code_presentation
+order by si.id_student
+
+student_reg_all
+select *
+from [ou.studentInfo] si
+left join
+[ou.studentRegistration] sr
+on si.id_student=sr.id_student and si.code_module=sr.code_module and si.code_presentation=sr.code_presentation
+
+student_assessment
+select *
+from [ou.studentAssessment] sa
+left join
+[ou.assessment] a on sa.id_assessment=a.id_assessment
+
+student_as_drop
+select *
+from [ou.student_assessment] 
+inner join [ou.student_drop] on sa_id_student=si_id_student 
+and a_code_module=si_code_module and a_code_presentation=si_code_presentation
+
+student_acti_drop
+select sva.sv_id_student as id_student, sva.sv_code_module as code_module, sva.sv_code_presentation as code_presentation,
+sra.si_final_result as final_result, sra.sr_date_registration as date_registration, sra.sr_date_unregistration as date_unregistration,
+sva.sv_sum_click as sum_click, sva.v_activity_type as activity_type, sva.sv_date as activity_date
+from [ou.student__vle_acti] sva
+join ou.student_reg_all sra
+on sva.sv_id_student=sra.si_id_student 
+and sva.sv_code_module=sra.si_code_module 
+and sva.sv_code_presentation=sra.si_code_presentation
+
+student__vle_acti
+select *
+from [ou.studentVle] sv
+left join [ou.vle] v
+on sv.id_site=v.id_site and sv.code_module=v.code_module and sv.code_presentation=v.code_presentation
+
+model2
+select sva.sv_id_student as id_student, sva.sv_code_module as code_module, sva.sv_code_presentation as code_presentation,
+sra.si_final_result as final_result, sra.sr_date_registration as date_registration, sra.sr_date_unregistration as date_unregistration,
+sva.sv_sum_click as sum_click,sra.si_highest_education as highest_education,sra.si_num_of_prev_attempts as num_of_prev_attempts,
+sra.si_studied_credits as studied_credits
+from (select sv_id_student,sv_code_module,sv_code_presentation, sum(sv_sum_click) as sv_sum_click
+from [ou.student__vle_acti] 
+group by sv_id_student,sv_code_module,sv_code_presentation) as sva
+join ou.student_reg_all sra
+on sva.sv_id_student=sra.si_id_student 
+and sva.sv_code_module=sra.si_code_module 
+and sva.sv_code_presentation=sra.si_code_presentation
+
